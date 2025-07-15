@@ -7,16 +7,32 @@ set -euo pipefail
 
 # ───────────── CONFIG SECTION ────────────────────────────────────────────────
 # List any baseline packages you want on every host here.
-EXTRA_PKGS=(vim)
+# Baseline packages
+EXTRA_PKGS=(vim jq)
 
-# Git repo containing docker compose stacks
-COMPOSE_REPO_URL="https://github.com/scheric1/docker-startup"
-COMPOSE_CLONE_DIR="/opt/docker-stacks"
+# Git repo containing docker compose stacks (override in .env if desired)
+COMPOSE_REPO_URL=${COMPOSE_REPO_URL:-"https://github.com/scheric1/docker-startup"}
+COMPOSE_CLONE_DIR=${COMPOSE_CLONE_DIR:-"/opt/docker-stacks"}
+
+# Portainer configuration
+PORTAINER_VERSION=${PORTAINER_VERSION:-"2.19"}
+PORTAINER_ADMIN_PWD=${PORTAINER_ADMIN_PWD:-"change-me"}
+PORTAINER_DATA_VOL=${PORTAINER_DATA_VOL:-"portainer_data"}
+PORTAINER_URL=${PORTAINER_URL:-"https://127.0.0.1:9443"}
 # ─────────────────────────────────────────────────────────────────────────────
 
 info()  { printf '\e[32m[INFO]\e[0m  %s\n' "$*"; }
 warn()  { printf '\e[33m[WARN]\e[0m  %s\n' "$*"; }
 fatal() { printf '\e[31m[FAIL]\e[0m  %s\n' "$*"; exit 1; }
+
+# Load environment overrides if a .env file is present
+if [[ -f .env ]]; then
+  info "Loading variables from .env"
+  set -a
+  # shellcheck disable=SC1091
+  source .env
+  set +a
+fi
 
 ###############################################################################
 # 0. Refresh APT cache & install baseline tools
@@ -84,7 +100,7 @@ else
 fi
 
 ###############################################################################
-# 5. Pull compose repo and deploy stacks
+# 5. Pull compose repo
 ###############################################################################
 if [[ ! -d "$COMPOSE_CLONE_DIR" ]]; then
   git clone "$COMPOSE_REPO_URL" "$COMPOSE_CLONE_DIR"
@@ -92,16 +108,49 @@ else
   git -C "$COMPOSE_CLONE_DIR" pull
 fi
 
-info "Deploying docker compose stacks from $COMPOSE_CLONE_DIR…"
+###############################################################################
+# 6. Launch Portainer with admin password pre-seeded
+###############################################################################
+info "Launching Portainer $PORTAINER_VERSION…"
+HASHED=$(docker run --rm httpd:2.4-alpine \
+        htpasswd -nbB admin "$PORTAINER_ADMIN_PWD" | cut -d':' -f2)
+docker volume create "$PORTAINER_DATA_VOL"
+docker run -d --name portainer \
+  -p 9443:9443 -p 8000:8000 \
+  --restart unless-stopped \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "$PORTAINER_DATA_VOL":/data \
+  portainer/portainer-ce:"$PORTAINER_VERSION" \
+  --admin-password "$HASHED"
+
+info "Waiting for Portainer API…"
+until curl -skf "$PORTAINER_URL/api/status" >/dev/null; do sleep 2; done
+info "Portainer is ready ✔"
+
+###############################################################################
+# 7. Deploy compose stacks through Portainer API
+###############################################################################
+JWT=$(curl -sk -X POST "$PORTAINER_URL/api/auth" \
+        -H "Content-Type: application/json" \
+        -d "{\"Username\":\"admin\",\"Password\":\"$PORTAINER_ADMIN_PWD\"}" | \
+      jq -r .jwt)
+ENDPOINT_ID=1
+
+info "Deploying compose stacks via Portainer…"
 find "$COMPOSE_CLONE_DIR/docker" -name '*.yml' | while read -r compose_file; do
   parent_dir=$(basename "$(dirname "$compose_file")")
   if [[ "$parent_dir" == "docker" ]]; then
-    project_name="$(basename "$compose_file" .yml)"
+    stack_name="$(basename "$compose_file" .yml)"
   else
-    project_name="$parent_dir"
+    stack_name="$parent_dir"
   fi
-  docker compose -f "$compose_file" --project-name "$project_name" up -d
-  info "Deployed: $compose_file (stack: $project_name)"
+  curl -sk -X POST \
+    "$PORTAINER_URL/api/stacks?type=2&method=string&endpointId=$ENDPOINT_ID" \
+    -H "Authorization: Bearer $JWT" -H "Content-Type: multipart/form-data" \
+    -F "Name=$stack_name" \
+    -F "StackFileContent=@$compose_file" \
+    -F "EndpointID=$ENDPOINT_ID" >/dev/null
+  info "Portainer deployed stack: $stack_name"
 done
 
 ###############################################################################
@@ -110,7 +159,7 @@ cat <<'EOM'
 - Installed baseline packages (see EXTRA_PKGS)
 - Dedicated 'docker' user created
 - Docker & Compose verified
-- Docker compose stacks deployed
+- Stacks deployed via Portainer
 
 Remember:   usermod --append --groups docker <your_user>
 to grant additional users Docker access.
