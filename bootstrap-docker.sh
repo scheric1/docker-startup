@@ -7,11 +7,11 @@ set -euo pipefail
 
 # ───────────── CONFIG SECTION ────────────────────────────────────────────────
 # List any baseline packages you want on every host here.
-EXTRA_PKGS=(vim)          # ← add more:  EXTRA_PKGS=(vim git htop)
+EXTRA_PKGS=(vim)
 
-# Portainer ports (change if you like)
-PORTAINER_UI_PORT=9443
-PORTAINER_AGENT_PORT=8000
+# Git repo containing docker compose stacks
+COMPOSE_REPO_URL="https://github.com/youruser/your-repo.git"
+COMPOSE_CLONE_DIR="/opt/docker-stacks"
 # ─────────────────────────────────────────────────────────────────────────────
 
 info()  { printf '\e[32m[INFO]\e[0m  %s\n' "$*"; }
@@ -84,31 +84,30 @@ else
 fi
 
 ###############################################################################
-# 5. Deploy Portainer CE for web management
+# 5. Pull compose repo and deploy stacks
 ###############################################################################
-docker volume create portainer_data >/dev/null 2>&1 || true
+if [[ ! -d "$COMPOSE_CLONE_DIR" ]]; then
+  git clone "$COMPOSE_REPO_URL" "$COMPOSE_CLONE_DIR"
+else
+  git -C "$COMPOSE_CLONE_DIR" pull
+fi
 
-# Remove any existing Portainer container to ensure a clean (re)deploy
-docker rm -f portainer >/dev/null 2>&1 || true
-
-info "Deploying Portainer CE (web UI on https://<host>:${PORTAINER_UI_PORT})…"
-docker run -d \
-  --name portainer \
-  --restart=always \
-  -p ${PORTAINER_AGENT_PORT}:8000 \
-  -p ${PORTAINER_UI_PORT}:9443 \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  -v portainer_data:/data \
-  portainer/portainer-ce:latest
+info "Deploying docker compose stacks from $COMPOSE_CLONE_DIR…"
+find "$COMPOSE_CLONE_DIR/docker" -name '*.yml' | while read -r compose_file; do
+  docker compose -f "$compose_file" up -d
+  info "Deployed: $compose_file"
+done
 
 ###############################################################################
-info "Bootstrap complete! 🎉
-- Installed baseline packages: ${EXTRA_PKGS[*]:-"(none)"} 
-- Dedicated 'docker' user created (no password, no login shell)
-- First non-root user added to docker group (if present)
+info "Bootstrap complete! 🎉"
+cat <<'EOM'
+- Installed baseline packages (see EXTRA_PKGS)
+- Dedicated 'docker' user created
 - Docker & Compose verified
-- Portainer running → https://<server_ip>:${PORTAINER_UI_PORT}
+- Docker compose stacks deployed
 
 Remember:   usermod --append --groups docker <your_user>
 to grant additional users Docker access.
-"
+EOM
+
+
