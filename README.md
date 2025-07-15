@@ -1,15 +1,17 @@
 # Docker Startup Bootstrap Script
 
-This repository provides **`bootstrap-docker.sh`**, a one-shot script that prepares an Ubuntu or other Debian-based host for Docker development and deploys [Portainer CE](https://www.portainer.io/).
+This repository provides **`bootstrap-docker.sh`**, a one-shot script that prepares an Ubuntu (or other Debian-based) host for Docker development and deploys container stacks managed by docker compose.
 
 ## What the script does
 
-1. **Install baseline packages** – uses apt to install any packages listed in the `EXTRA_PKGS` array (defaults to `vim`).
-2. **Verify Docker Engine** – ensures Docker is installed and running.
-3. **Install Docker Compose v2 plugin** – installs the `docker-compose-plugin` if missing.
-4. **Create a dedicated `docker` user** – sets up a system user and adds the first logged-in user to the `docker` group.
-5. **Run a functional test** – executes `hello-world` using the `docker` user.
-6. **Deploy Portainer CE** – starts the container with the UI on port `9443` and agent on port `8000` by default.
+1. **Install baseline packages** listed in the `EXTRA_PKGS` array.
+2. **Verify Docker Engine** is installed and running.
+3. **Install Docker Compose v2 plugin** if missing.
+4. **Create a dedicated `docker` user** and add the first logged-in user to the group.
+5. **Run a functional test** using `hello-world`.
+6. **Pull and deploy compose stacks** from a Git repository.
+
+Example compose files for Portainer, Uptime Kuma and Plex are provided under `docker/`.
 
 When complete, Portainer will be reachable at `https://<server_ip>:9443`.
 
@@ -22,23 +24,21 @@ Edit the `EXTRA_PKGS` array near the top of the script to include any packages y
 EXTRA_PKGS=(vim git htop curl)
 ```
 
-The script installs each package via `apt-get install` at runtime.
-
-### Configuring Portainer
-Two variables control the Portainer ports:
+### Configuring the compose repository
+Two variables control where compose files are fetched and deployed:
 
 ```bash
-PORTAINER_UI_PORT=9443    # HTTPS web UI
-PORTAINER_AGENT_PORT=8000 # Agent port
+COMPOSE_REPO_URL="https://github.com/youruser/your-repo.git"
+COMPOSE_CLONE_DIR="/opt/docker-stacks"
 ```
 
-Change these before running the script if you need different ports. The script recreates the Portainer container each time so changes are applied on the next execution.
+Change these before running the script if you want to use a different repository or directory.
 
 ## Running the script remotely
 Execute the script directly via `curl` and `bash` (run as root or with sudo):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/scheric1/docker-startup/main/boostrap-docker.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/scheric1/docker-startup/main/bootstrap-docker.sh | sudo bash
 ```
 
 This will download the latest version and run it in one step.
