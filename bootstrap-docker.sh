@@ -111,10 +111,20 @@ fi
 ###############################################################################
 # 6. Launch Portainer with admin password pre-seeded
 ###############################################################################
+
+# -- Verify the requested Portainer tag exists; fall back to "latest" if not
+info "Checking availability of portainer/portainer-ce:${PORTAINER_VERSION}…"
+if ! docker pull -q "portainer/portainer-ce:${PORTAINER_VERSION}" >/dev/null 2>&1; then
+  warn "Tag ${PORTAINER_VERSION} not found – falling back to 'latest'"
+  PORTAINER_VERSION=latest
+fi
+
 info "Launching Portainer $PORTAINER_VERSION…"
 HASHED=$(docker run --rm httpd:2.4-alpine \
         htpasswd -nbB admin "$PORTAINER_ADMIN_PWD" | cut -d':' -f2)
+
 docker volume create "$PORTAINER_DATA_VOL"
+
 docker run -d --name portainer \
   -p 9443:9443 -p 8000:8000 \
   --restart unless-stopped \
@@ -126,6 +136,7 @@ docker run -d --name portainer \
 info "Waiting for Portainer API…"
 until curl -skf "$PORTAINER_URL/api/status" >/dev/null; do sleep 2; done
 info "Portainer is ready ✔"
+
 
 ###############################################################################
 # 7. Deploy compose stacks through Portainer API
