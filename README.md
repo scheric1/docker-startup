@@ -9,7 +9,7 @@ This repository provides **`bootstrap-docker.sh`**, a one-shot script that prepa
 3. **Install Docker Compose v2 plugin** if missing.
 4. **Create a dedicated `docker` user** and add the first logged-in user to the group.
 5. **Run a functional test** using `hello-world`.
-6. **Pull and deploy compose stacks** from a Git repository.
+6. **Pull compose stacks from a Git repository and deploy them headlessly via Portainer.**
 
 Example compose files for Portainer and Uptime Kuma are provided under
 `docker/`, each in its own subfolder. Any compose files placed in their own
@@ -36,6 +36,9 @@ COMPOSE_CLONE_DIR="/opt/docker-stacks"
 ```
 
 Change these before running the script if you want to use a different repository or directory.
+
+### Using a `.env` file
+Copy `.env.sample` to `.env` and modify the values to adjust Portainer or repository settings without editing the script. Any variables defined in `.env` will override the defaults used by `bootstrap-docker.sh`.
 
 ### Organizing compose stacks
 Place each compose file inside its own subdirectory under `docker/` to create a
