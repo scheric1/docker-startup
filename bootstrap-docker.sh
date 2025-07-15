@@ -94,8 +94,14 @@ fi
 
 info "Deploying docker compose stacks from $COMPOSE_CLONE_DIR…"
 find "$COMPOSE_CLONE_DIR/docker" -name '*.yml' | while read -r compose_file; do
-  docker compose -f "$compose_file" up -d
-  info "Deployed: $compose_file"
+  parent_dir=$(basename "$(dirname "$compose_file")")
+  if [[ "$parent_dir" == "docker" ]]; then
+    project_name="$(basename "$compose_file" .yml)"
+  else
+    project_name="$parent_dir"
+  fi
+  docker compose -f "$compose_file" --project-name "$project_name" up -d
+  info "Deployed: $compose_file (stack: $project_name)"
 done
 
 ###############################################################################

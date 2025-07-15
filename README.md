@@ -11,7 +11,10 @@ This repository provides **`bootstrap-docker.sh`**, a one-shot script that prepa
 5. **Run a functional test** using `hello-world`.
 6. **Pull and deploy compose stacks** from a Git repository.
 
-Example compose files for Portainer, and Uptime Kuma are provided under `docker/`.
+Example compose files for Portainer and Uptime Kuma are provided under
+`docker/`, each in its own subfolder. Any compose files placed in their own
+directory will be deployed as a separate stack, allowing you to isolate
+services by folder.
 
 When complete, Portainer will be reachable at `https://<server_ip>:9443`.
 
@@ -33,6 +36,12 @@ COMPOSE_CLONE_DIR="/opt/docker-stacks"
 ```
 
 Change these before running the script if you want to use a different repository or directory.
+
+### Organizing compose stacks
+Place each compose file inside its own subdirectory under `docker/` to create a
+separate stack. The bootstrap script derives the stack name from the folder
+name, so `docker/my-app/docker-compose.yml` will appear as stack `my-app` in
+Portainer.
 
 ## Running the script remotely
 Execute the script directly via `curl` and `bash` (run as root or with sudo):
