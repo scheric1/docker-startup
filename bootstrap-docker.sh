@@ -10,7 +10,7 @@ set -euo pipefail
 EXTRA_PKGS=(vim)
 
 # Git repo containing docker compose stacks
-COMPOSE_REPO_URL="https://github.com/youruser/your-repo.git"
+COMPOSE_REPO_URL="https://github.com/scheric1/docker-startup"
 COMPOSE_CLONE_DIR="/opt/docker-stacks"
 # ─────────────────────────────────────────────────────────────────────────────
 
