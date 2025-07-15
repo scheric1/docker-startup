@@ -31,9 +31,15 @@ fi
 ###############################################################################
 # 1. Verify Docker Engine is present & running
 ###############################################################################
-command -v docker >/dev/null 2>&1 || fatal "Docker not found – aborting."
-docker_version=$(docker --version | awk '{print $3}' | tr -d ,)
-info "Docker detected (version $docker_version)"
+if command -v docker >/dev/null 2>&1; then
+  docker_version=$(docker --version | awk '{print $3}' | tr -d ,)
+  info "Docker detected (version $docker_version)"
+else
+  info "Docker not found – installing…"
+  apt-get install -y -qq docker.io
+  docker_version=$(docker --version | awk '{print $3}' | tr -d ,)
+  info "Installed Docker (version $docker_version) ✔"
+fi
 
 systemctl start docker
 systemctl enable docker

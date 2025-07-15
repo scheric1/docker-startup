@@ -5,7 +5,7 @@ This repository provides **`bootstrap-docker.sh`**, a one-shot script that prepa
 ## What the script does
 
 1. **Install baseline packages** – uses apt to install any packages listed in the `EXTRA_PKGS` array (defaults to `vim`).
-2. **Verify Docker Engine** – ensures Docker is installed and running.
+2. **Verify Docker Engine** – installs Docker if needed and ensures it is running.
 3. **Install Docker Compose v2 plugin** – installs the `docker-compose-plugin` if missing.
 4. **Create a dedicated `docker` user** – sets up a system user and adds the first logged-in user to the `docker` group.
 5. **Run a functional test** – executes `hello-world` using the `docker` user.
@@ -45,7 +45,7 @@ This will download the latest version and run it in one step.
 
 ## Requirements
 * Ubuntu 22.04 or newer (or any compatible Debian-based distribution)
-* Docker already installed on the host
+* Docker will be installed automatically if missing
 
 ## License
 MIT
