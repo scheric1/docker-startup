@@ -11,7 +11,7 @@ This repository provides **`bootstrap-docker.sh`**, a one-shot script that prepa
 5. **Run a functional test** using `hello-world`.
 6. **Pull and deploy compose stacks** from a Git repository.
 
-Example compose files for Portainer, Uptime Kuma and Plex are provided under `docker/`.
+Example compose files for Portainer, and Uptime Kuma are provided under `docker/`.
 
 When complete, Portainer will be reachable at `https://<server_ip>:9443`.
 
