@@ -37,8 +37,6 @@ COMPOSE_CLONE_DIR="/opt/docker-stacks"
 
 Change these before running the script if you want to use a different repository or directory.
 
-### Using a `.env` file
-Copy `.env.sample` to `.env` and modify the values to adjust Portainer or repository settings without editing the script. Any variables defined in `.env` will override the defaults used by `bootstrap-docker.sh`.
 
 ### Organizing compose stacks
 Place each compose file inside its own subdirectory under `docker/` to create a
