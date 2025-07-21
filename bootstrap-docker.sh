@@ -10,7 +10,7 @@ set -euo pipefail
 # Baseline packages
 EXTRA_PKGS=(vim jq)
 
-# Git repo containing docker compose stacks (override in .env if desired)
+# Git repo containing docker compose stacks
 COMPOSE_REPO_URL=${COMPOSE_REPO_URL:-"https://github.com/scheric1/docker-startup"}
 COMPOSE_CLONE_DIR=${COMPOSE_CLONE_DIR:-"/opt/docker-stacks"}
 
@@ -25,14 +25,6 @@ info()  { printf '\e[32m[INFO]\e[0m  %s\n' "$*"; }
 warn()  { printf '\e[33m[WARN]\e[0m  %s\n' "$*"; }
 fatal() { printf '\e[31m[FAIL]\e[0m  %s\n' "$*"; exit 1; }
 
-# Load environment overrides if a .env file is present
-if [[ -f .env ]]; then
-  info "Loading variables from .env"
-  set -a
-  # shellcheck disable=SC1091
-  source .env
-  set +a
-fi
 
 ###############################################################################
 # 0. Refresh APT cache & install baseline tools
@@ -137,7 +129,6 @@ info "Waiting for Portainer API…"
 until curl -skf "$PORTAINER_URL/api/status" >/dev/null; do sleep 2; done
 info "Portainer is ready ✔"
 
-
 ###############################################################################
 # 7. Deploy compose stacks through Portainer API
 ###############################################################################
@@ -175,5 +166,4 @@ cat <<'EOM'
 Remember:   usermod --append --groups docker <your_user>
 to grant additional users Docker access.
 EOM
-
 
